@@ -6,30 +6,41 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <script>
-        AFRAME.registerComponent('ar-visibility-toggle', {
+        AFRAME.registerComponent('ar-persistent', {
             init: function () {
-                const marker = this.el.parentNode;
+                const el = this.el;
+                const marker = el.parentNode;
+                let hasBeenFound = false;
 
-                // マーカーが検出されたときのみ表示する
+                // マーカー検出時の処理
                 marker.addEventListener('markerFound', () => {
-                    this.el.setAttribute('visible', true);
-                    // マーカーが一度認識された後は、イベントリスナーを削除することで
-                    // 以降の markerLost イベントの影響を受けないようにする
-                    marker.removeEventListener('markerLost', this.hideElement);
-                    console.log('Marker found, element shown and visibility locked.');
+                    if (!hasBeenFound) {
+                        // 1. まず表示する
+                        el.setAttribute('visible', true);
+                        
+                        // 2. エンティティのワールド座標と回転を取得
+                        const worldPosition = el.object3D.getWorldPosition(new THREE.Vector3());
+                        const worldRotation = el.object3D.rotation;
+                        
+                        // 3. マーカーから切り離し、<a-scene>の直下へ移動
+                        const scene = el.sceneEl;
+                        el.setAttribute('position', worldPosition); // ワールド座標をローカル座標として設定
+                        el.setAttribute('rotation', {
+                            x: THREE.MathUtils.radToDeg(worldRotation.x),
+                            y: THREE.MathUtils.radToDeg(worldRotation.y),
+                            z: THREE.MathUtils.radToDeg(worldRotation.z)
+                        });
+                        
+                        // 親要素から削除し、シーンに追加
+                        marker.removeChild(el);
+                        scene.appendChild(el);
+                        
+                        hasBeenFound = true;
+                        console.log('Marker found, element detached and persistent.');
+                    }
                 });
                 
-                // markerLost イベントで非表示にする処理は削除します。
-                // ただし、AR.jsはマーカーが外れるとエンティティの位置をリセットしようとするため、
-                // A-Frameの仕組み上、 visible:true にしたままではオブジェクトは画面から消えます。
-                // したがって、このロジックは「マーカーが検出されたら表示し、その後は非表示にしない」という
-                // 動作になりますが、AR.jsの制御下にある限り、マーカーが失われるとオブジェクトはトラッキングを失い、
-                // 最終的に画面から消えます。
-
-                // A-Frame/AR.jsの標準的な動作では、マーカーが失われた後も表示し続けるには、
-                // マーカー要素から切り離す**デタッチ**や、その時点の**ワールド座標を保持**する処理が必要になります。
-                // 今回は「マーカーが見つかったら表示する」というロジックのみを保持し、
-                // 意図的に非表示にすることをやめます。
+                // markerLost時の処理は不要（既にデタッチされているため）
             }
         });
     </script>
@@ -49,14 +60,14 @@
                  scale="8 8 8"
                  rotation="0 0 0"
                  visible="false" 
-                 ar-visibility-toggle></a-image>
+                 ar-persistent></a-image>
 
         <a-image src="#heart-img"
                  position="0.5 -1 -5.0"
                  scale="2.5 2.5 2.5"  
                  rotation="0 0 0"
                  visible="false" 
-                 ar-visibility-toggle></a-image>
+                 ar-persistent></a-image>
 
         <a-image src="#gear-img"
                  position="3 1.5 -4.9" 
@@ -64,7 +75,7 @@
                  rotation="0 0 0"
                  animation="property: rotation; to: 0 0 360; loop: true; easing: linear; dur: 6000;"
                  visible="false" 
-                 ar-visibility-toggle></a-image> 
+                 ar-persistent></a-image> 
 
         <a-image src="#gear-img"
                  position="3 0.5 -4.9" 
@@ -72,7 +83,7 @@
                  rotation="0 0 30"
                  animation="property: rotation; to: 0 0 -360; loop: true; easing: linear; dur: 4000;"
                  visible="false" 
-                 ar-visibility-toggle></a-image> 
+                 ar-persistent></a-image> 
 
         <a-image src="#gear-img"
                  position="3 -0.5 -4.9" 
@@ -80,7 +91,7 @@
                  rotation="0 0 -30"
                  animation="property: rotation; to: 0 0 360; loop: true; easing: linear; dur: 6000;"
                  visible="false" 
-                 ar-visibility-toggle></a-image> 
+                 ar-persistent></a-image> 
     </a-marker>
 
     <a-entity camera></a-entity>
