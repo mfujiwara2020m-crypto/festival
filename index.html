@@ -4,6 +4,24 @@
     <title>A-Frame AR.js Hiro Marker Scene (Rotating Gears)</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    
+    <script>
+        AFRAME.registerComponent('ar-visibility-toggle', {
+            init: function () {
+                const marker = this.el.parentNode;
+
+                marker.addEventListener('markerFound', () => {
+                    this.el.setAttribute('visible', true);
+                    console.log('Marker found, showing element.');
+                });
+
+                marker.addEventListener('markerLost', () => {
+                    this.el.setAttribute('visible', false);
+                    console.log('Marker lost, hiding element.');
+                });
+            }
+        });
+    </script>
 </head>
 <body>
 
@@ -18,24 +36,44 @@
         <a-image src="#charactor-img"
                  position="0 -1.5 -10"
                  scale="8 8 8"
-                 rotation="0 0 0"></a-image>
+                 rotation="0 0 0"
+                 visible="false" 
+                 ar-visibility-toggle></a-image>
 
         <a-image src="#heart-img"
-                 position="0 -1 -5.0"
-                 scale="2 2 2"  rotation="0 0 0"></a-image>
+                 position="0.5 -1 -5.0"
+                 scale="2.5 2.5 2.5"  
+                 rotation="0 0 0"
+                 visible="false" 
+                 ar-visibility-toggle></a-image>
 
         <a-image src="#gear-img"
-                 position="3.5 1.5 -4.9" scale="1.5 1.5 1.5" rotation="0 0 0"
-                 animation="property: rotation; to: 0 0 360; loop: true; easing: linear; dur: 6000;"></a-image> <a-image src="#gear-img"
-                 position="3.5 0.5 -4.9" scale="1.5 1.5 1.5" rotation="0 0 30"
-                 animation="property: rotation; to: 0 0 -360; loop: true; easing: linear; dur: 4000;"></a-image> <a-image src="#gear-img"
-                 position="3.5 -0.5 -4.9" scale="1.5 1.5 1.5" rotation="0 0 -30"
-                 animation="property: rotation; to: 0 0 360; loop: true; easing: linear; dur: 6000;"></a-image> </a-marker>
+                 position="3 1.5 -4.9" 
+                 scale="1.5 1.5 1.5" 
+                 rotation="0 0 0"
+                 animation="property: rotation; to: 0 0 360; loop: true; easing: linear; dur: 6000;"
+                 visible="false" 
+                 ar-visibility-toggle></a-image> 
+
+        <a-image src="#gear-img"
+                 position="3 0.5 -4.9" 
+                 scale="1.5 1.5 1.5" 
+                 rotation="0 0 30"
+                 animation="property: rotation; to: 0 0 -360; loop: true; easing: linear; dur: 4000;"
+                 visible="false" 
+                 ar-visibility-toggle></a-image> 
+
+        <a-image src="#gear-img"
+                 position="3 -0.5 -4.9" 
+                 scale="1.5 1.5 1.5" 
+                 rotation="0 0 -30"
+                 animation="property: rotation; to: 0 0 360; loop: true; easing: linear; dur: 6000;"
+                 visible="false" 
+                 ar-visibility-toggle></a-image> 
+    </a-marker>
 
     <a-entity camera></a-entity>
 
 </a-scene>
 </body>
 </html>
-
-
