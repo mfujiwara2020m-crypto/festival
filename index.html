@@ -10,37 +10,53 @@
             init: function () {
                 const el = this.el;
                 const marker = el.parentNode;
-                let hasBeenFound = false;
+                
+                // 初回マーカー検出時のみ実行するためのフラグ
+                let hasBeenFound = false; 
 
                 // マーカー検出時の処理
-                marker.addEventListener('markerFound', () => {
-                    if (!hasBeenFound) {
-                        // 1. まず表示する
-                        el.setAttribute('visible', true);
-                        
-                        // 2. エンティティのワールド座標と回転を取得
-                        const worldPosition = el.object3D.getWorldPosition(new THREE.Vector3());
-                        const worldRotation = el.object3D.rotation;
-                        
-                        // 3. マーカーから切り離し、<a-scene>の直下へ移動
-                        const scene = el.sceneEl;
-                        el.setAttribute('position', worldPosition); // ワールド座標をローカル座標として設定
-                        el.setAttribute('rotation', {
-                            x: THREE.MathUtils.radToDeg(worldRotation.x),
-                            y: THREE.MathUtils.radToDeg(worldRotation.y),
-                            z: THREE.MathUtils.radToDeg(worldRotation.z)
-                        });
-                        
-                        // 親要素から削除し、シーンに追加
-                        marker.removeChild(el);
-                        scene.appendChild(el);
-                        
-                        hasBeenFound = true;
-                        console.log('Marker found, element detached and persistent.');
-                    }
-                });
-                
-                // markerLost時の処理は不要（既にデタッチされているため）
+                const onMarkerFound = () => {
+                    if (hasBeenFound) return;
+                    
+                    // 1. まず表示する
+                    el.setAttribute('visible', true);
+                    
+                    // 2. ワールド座標を取得するために、three.jsのオブジェクトをラップします。
+                    // A-Frameのオブジェクトは three.js の Mesh を持ちます。
+                    const obj3d = el.object3D;
+                    const worldPosition = new THREE.Vector3();
+                    const worldQuaternion = new THREE.Quaternion();
+                    const worldScale = new THREE.Vector3();
+                    
+                    // ワールド座標と回転、スケールを取得
+                    obj3d.matrixWorld.decompose(worldPosition, worldQuaternion, worldScale);
+                    
+                    // 3. マーカーから切り離し、<a-scene>の直下へ移動
+                    const scene = el.sceneEl;
+                    
+                    // ワールド座標をシーンに対するローカル座標として再設定
+                    el.setAttribute('position', worldPosition);
+                    el.setAttribute('rotation', {
+                        x: THREE.MathUtils.radToDeg(worldQuaternion.x), // Quaternionの値をEuler角に変換
+                        y: THREE.MathUtils.radToDeg(worldQuaternion.y),
+                        z: THREE.MathUtils.radToDeg(worldQuaternion.z)
+                    });
+                    
+                    // scaleはそのまま使用
+                    el.setAttribute('scale', worldScale); 
+
+                    // 親要素から削除し、シーンに追加
+                    marker.removeChild(el);
+                    scene.appendChild(el);
+                    
+                    hasBeenFound = true;
+                    
+                    // イベントリスナーはもう必要ないので削除しても良い
+                    // marker.removeEventListener('markerFound', onMarkerFound);
+                    console.log('Marker found, element detached and persistent.');
+                };
+
+                marker.addEventListener('markerFound', onMarkerFound);
             }
         });
     </script>
@@ -64,13 +80,13 @@
 
         <a-image src="#heart-img"
                  position="0.5 -1 -5.0"
-                 scale="2 2 2"  
+                 scale="2.5 2.5 2.5"  
                  rotation="0 0 0"
                  visible="false" 
                  ar-persistent></a-image>
 
         <a-image src="#gear-img"
-                 position="3 2 -4.9" 
+                 position="3 1.5 -4.9" 
                  scale="1.5 1.5 1.5" 
                  rotation="0 0 0"
                  animation="property: rotation; to: 0 0 360; loop: true; easing: linear; dur: 6000;"
@@ -78,7 +94,7 @@
                  ar-persistent></a-image> 
 
         <a-image src="#gear-img"
-                 position="3 1 -4.9" 
+                 position="3 0.5 -4.9" 
                  scale="1.5 1.5 1.5" 
                  rotation="0 0 30"
                  animation="property: rotation; to: 0 0 -360; loop: true; easing: linear; dur: 4000;"
@@ -86,7 +102,7 @@
                  ar-persistent></a-image> 
 
         <a-image src="#gear-img"
-                 position="3 0 -4.9" 
+                 position="3 -0.5 -4.9" 
                  scale="1.5 1.5 1.5" 
                  rotation="0 0 -30"
                  animation="property: rotation; to: 0 0 360; loop: true; easing: linear; dur: 6000;"
@@ -99,4 +115,3 @@
 </a-scene>
 </body>
 </html>
-
