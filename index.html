@@ -1,33 +1,75 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>A-Frame AR.js シングルファイルAR</title>
+    <title>AR.js: マーカーロスト後もモデルを維持</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+    <script>
+        // カスタムコンポーネントの定義
+        AFRAME.registerComponent('keep-model-visible', {
+            init: function () {
+                const marker = this.el.parentNode; // 親要素は <a-marker>
+                const model = this.el; // このコンポーネントがアタッチされている要素 (<a-box>)
+                
+                // 初期の表示状態を設定
+                // マーカーに追従している間は a-marker の制御に任せるため、 visible は 'true'のまま
+                
+                let isModelAnchored = true; // モデルがまだマーカーに追従しているか (初回検出前)
+                
+                // === イベントリスナーの設定 ===
+                
+                // 1. マーカーが検出されたとき (初回に一度だけ実行したい処理はここ)
+                marker.addEventListener('markerFound', () => {
+                    if (isModelAnchored) {
+                        console.log('Marker Found: モデルの初期位置を設定');
+                        // モデルは既に正しい位置にある
+                        isModelAnchored = false; 
+                    }
+                });
+
+                // 2. マーカーが見失われたとき
+                marker.addEventListener('markerLost', () => {
+                    if (!isModelAnchored) {
+                        console.log('Marker Lost: モデルをシーンのルートに移動し、マーカーから解放');
+
+                        // 座標系を維持しつつ、モデルを <a-marker> の外（<a-scene>の直下）へ移動させる
+                        
+                        // 1. モデルの現在のグローバルな位置と回転を取得
+                        const worldPosition = new THREE.Vector3();
+                        const worldRotation = new THREE.Quaternion();
+                        model.object3D.getWorldPosition(worldPosition);
+                        model.object3D.getWorldQuaternion(worldRotation);
+
+                        // 2. モデルを親（マーカー）から切り離す
+                        marker.removeChild(model);
+
+                        // 3. モデルを <a-scene> のルートに追加
+                        // AR.jsの a-scene は <a-scene> の代わりに three.js の Scene を使っているため、
+                        // 慣例的に a-entity camera の親に移動させます（ここではシンプルに <a-scene>の直下へ）
+                        document.querySelector('a-scene').appendChild(model);
+                        
+                        // 4. グローバルな位置と回転をローカルな値として再設定（マーカーの座標系から解放）
+                        model.object3D.position.copy(worldPosition);
+                        model.object3D.quaternion.copy(worldRotation);
+                        
+                        // マーカーから解放されたため、今後の追跡処理は不要
+                    }
+                });
+            }
+        });
+    </script>
 </head>
 <body style='margin : 0px; overflow: hidden;'>
 
-<a-scene embedded arjs='sourceType: webcam; detectionMode: mono; maxDetectionRate: 60; trackingMethod: best;'>
+<a-scene embedded arjs='sourceType: webcam; detectionMode: mono;'>
 
     <a-marker preset='hiro'>
-        
         <a-box position='0 0.5 0' 
                material='color: blue;' 
                scale='1 1 1'
-               animation="property: rotation; to: 0 360 0; loop: true; easing: linear; dur: 3000;">
-        </a-box>
-
-        <a-sphere position='1.5 0.5 0' 
-                  radius='0.5' 
-                  material='color: red; opacity: 0.8;'>
-        </a-sphere>
-
-        <a-plane rotation='-90 0 0' 
-                 width='4' height='4' 
-                 color='green' 
-                 opacity='0.5'>
-        </a-plane>
-
+               animation="property: rotation; to: 0 360 0; loop: true; easing: linear; dur: 3000;"
+               keep-model-visible></a-box>
     </a-marker>
 
     <a-entity camera></a-entity>
