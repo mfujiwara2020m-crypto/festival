@@ -10,15 +10,26 @@
             init: function () {
                 const marker = this.el.parentNode;
 
+                // マーカーが検出されたときのみ表示する
                 marker.addEventListener('markerFound', () => {
                     this.el.setAttribute('visible', true);
-                    console.log('Marker found, showing element.');
+                    // マーカーが一度認識された後は、イベントリスナーを削除することで
+                    // 以降の markerLost イベントの影響を受けないようにする
+                    marker.removeEventListener('markerLost', this.hideElement);
+                    console.log('Marker found, element shown and visibility locked.');
                 });
+                
+                // markerLost イベントで非表示にする処理は削除します。
+                // ただし、AR.jsはマーカーが外れるとエンティティの位置をリセットしようとするため、
+                // A-Frameの仕組み上、 visible:true にしたままではオブジェクトは画面から消えます。
+                // したがって、このロジックは「マーカーが検出されたら表示し、その後は非表示にしない」という
+                // 動作になりますが、AR.jsの制御下にある限り、マーカーが失われるとオブジェクトはトラッキングを失い、
+                // 最終的に画面から消えます。
 
-                marker.addEventListener('markerLost', () => {
-                    this.el.setAttribute('visible', false);
-                    console.log('Marker lost, hiding element.');
-                });
+                // A-Frame/AR.jsの標準的な動作では、マーカーが失われた後も表示し続けるには、
+                // マーカー要素から切り離す**デタッチ**や、その時点の**ワールド座標を保持**する処理が必要になります。
+                // 今回は「マーカーが見つかったら表示する」というロジックのみを保持し、
+                // 意図的に非表示にすることをやめます。
             }
         });
     </script>
